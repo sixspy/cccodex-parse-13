@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}依赖列表 · {{ lab }}{% endblock %}
+{% block content %}
+<p class="crumb"><a href="/jobs/">← 返回任务列表</a></p>
+<h1>上游依赖图</h1>
+<p class="lede">下游任务的上游态、等待舱、中断数与走法名一览。上游未齐禁止开析，由后台强制。</p>
+
+<section class="panel">
+  <h2>依赖策略 · 上游挂掉后下游去向</h2>
+  <p class="hint">
+    当前走法名：<strong>{{ policy.move }}</strong>
+    {% if policy.locked_date %}
+      （{{ policy.locked_date }} 已落定，当天不许再改；今天 {{ today }}）
+    {% else %}
+      （尚未落定，落定后当天锁定）
+    {% endif %}
+  </p>
+  <div class="stat-row">
+    <div class="stat"><span class="stat-num">{{ waiting_count }}</span><span class="stat-label">等待舱</span></div>
+    <div class="stat"><span class="stat-num">{{ interrupted_count }}</span><span class="stat-label">依赖中断数</span></div>
+  </div>
+  <form method="post" action="/dependencies/policy/" class="policy-form">
+    {% csrf_token %}
+    {% for move in moves %}
+    <label class="pick-item">
+      <input type="radio" name="move" value="{{ move }}"
+        {% if policy.move == move %}checked{% endif %}
+        {% if policy.locked_date == today %}disabled{% endif %} />
+      {{ move }}
+    </label>
+    {% endfor %}
+    <button type="submit" {% if policy.locked_date == today %}disabled{% endif %}>落定走法</button>
+    {% if policy.locked_date == today %}<p class="hint">今天已落定，按钮已锁定。</p>{% endif %}
+  </form>
+</section>
+
+<section class="panel">
+  <h2>依赖列表（仅下游任务）</h2>
+  <table class="grid">
+    <thead>
+      <tr><th>下游编号</th><th>下游编码</th><th>上游态</th><th>是否齐套</th><th>等待舱</th><th>中断数</th><th>走法名</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td>{{ row.job.id }}</td>
+        <td class="mono"><a href="/jobs/{{ row.job.id }}/">{{ row.job.code }}</a></td>
+        <td>
+          {% for u in row.upstreams %}
+            <span class="chip chip-{{ u.status }}">{{ u.code }}：{{ u.status }}</span>{% if not forloop.last %} {% endif %}
+          {% endfor %}
+        </td>
+        <td>
+          {% if row.complete %}<span class="ok">上游齐套</span>{% else %}<span class="wait">上游未齐</span>{% endif %}
+        </td>
+        <td>{% if row.in_waiting %}<span class="wait">在舱</span>{% else %}—{% endif %}</td>
+        <td>{% if row.dead_count %}<span class="bad">{{ row.dead_count }}</span>{% else %}0{% endif %}</td>
+        <td>{{ policy.move }}</td>
+        <td><a href="/jobs/{{ row.job.id }}/">读盘详情</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="hint">暂无下游任务；可在任务读盘详情页声明上游。</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>等待舱</h2>
+  {% if waiting_jobs %}
+  <p class="hint">
+    {% for j in waiting_jobs %}<a href="/jobs/{{ j.id }}/" class="mono">{{ j.code }}</a>（{{ j.title }}）{% if not forloop.last %} · {% endif %}{% endfor %}
+  </p>
+  {% else %}<p class="hint">等待舱为空。</p>{% endif %}
+
+  <h2>依赖中断</h2>
+  {% if interrupted_jobs %}
+  <p class="hint">
+    {% for j in interrupted_jobs %}<a href="/jobs/{{ j.id }}/" class="mono">{{ j.code }}</a>（{{ j.title }}）{% if not forloop.last %} · {% endif %}{% endfor %}
+  </p>
+  {% else %}<p class="hint">暂无依赖中断任务。</p>{% endif %}
+</section>
+{% endblock %}

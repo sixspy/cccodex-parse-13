@@ -8,5 +8,9 @@ urlpatterns = [
     path("jobs/", views.job_list),
     path("jobs/<int:job_id>/", views.job_detail),
     path("jobs/<int:job_id>/parse/", views.job_parse),
+    path("jobs/<int:job_id>/force-parse/", views.job_force_parse),
     path("jobs/<int:job_id>/land/", views.job_land),
+    path("jobs/<int:job_id>/deps/", views.deps_save),
+    path("dependencies/", views.dependency_board, name="dependency_board"),
+    path("dependencies/policy/", views.policy_set),
 ]

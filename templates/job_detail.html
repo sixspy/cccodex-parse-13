@@ -1,17 +1,123 @@
 {% extends "base.html" %}
 {% block title %}{{ job.title }} · {{ lab }}{% endblock %}
 {% block content %}
-<p class="crumb"><a href="/jobs/">← 返回列表</a></p>
+<p class="crumb"><a href="/jobs/">← 返回任务列表</a> · <a href="/dependencies/">依赖列表</a></p>
 <h1>{{ job.title }}</h1>
 <dl class="meta">
   <div><dt>编码</dt><dd class="mono">{{ job.code }}</dd></div>
-  <div><dt>状态</dt><dd><span class="chip">{{ job.status }}</span></dd></div>
+  <div><dt>状态</dt><dd><span class="chip chip-{{ job.status }}">{{ job.status }}</span></dd></div>
   <div><dt>源地址</dt><dd class="mono">{{ job.source_uri }}</dd></div>
   <div><dt>已解析</dt><dd>{{ job.parsed }}</dd></div>
   <div><dt>已入库</dt><dd>{{ job.landed }}</dd></div>
+  {% if job.force_reason %}<div><dt>强析缘由</dt><dd class="reason">{{ job.force_reason }}</dd></div>{% endif %}
 </dl>
-<div class="actions">
-  <form method="post" action="/jobs/{{ job.id }}/parse/">{% csrf_token %}<button type="submit">执行解析</button></form>
-  <form method="post" action="/jobs/{{ job.id }}/land/">{% csrf_token %}<button type="submit" class="secondary">执行入库</button></form>
-</div>
+
+<section class="panel">
+  <h2>上游依赖</h2>
+  {% if upstreams %}
+  <table class="grid">
+    <thead><tr><th>上游编码</th><th>上游标题</th><th>上游态</th><th>是否齐套</th></tr></thead>
+    <tbody>
+    {% for u in upstreams %}
+      <tr>
+        <td class="mono"><a href="/jobs/{{ u.id }}/">{{ u.code }}</a></td>
+        <td>{{ u.title }}</td>
+        <td><span class="chip chip-{{ u.status }}">{{ u.status }}</span></td>
+        <td>
+          {% if u.status == "已解析待入库" or u.status == "已入库" %}<span class="ok">已读盘</span>
+          {% elif u.status == "解析失败" or u.status == "依赖中断" %}<span class="bad">上游挂掉</span>
+          {% else %}<span class="wait">读盘中</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="hint">本任务无上游，属于依赖源头，可直接开析。</p>
+  {% endif %}
+
+  <h3>声明 / 调整上游</h3>
+  <form method="post" action="/jobs/{{ job.id }}/deps/" class="dep-form">
+    {% csrf_token %}
+    <p class="hint">勾选至少一个上游任务；空依赖不许保存，自依赖与成环会被拦下。</p>
+    <div class="pick">
+      {% for j in all_jobs %}
+      <label class="pick-item">
+        <input type="checkbox" name="upstream_ids" value="{{ j.id }}"
+          {% for u in upstreams %}{% if u.id == j.id %}checked{% endif %}{% endfor %} />
+        <span class="mono">{{ j.code }}</span> · {{ j.title }}
+        <span class="chip chip-{{ j.status }}">{{ j.status }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    <button type="submit">保存依赖</button>
+  </form>
+
+  {% if downstream_jobs %}
+  <h3>下游任务</h3>
+  <p class="hint">
+    {% for d in downstream_jobs %}
+      <a href="/jobs/{{ d.id }}/" class="mono">{{ d.code }}</a>
+      <span class="chip chip-{{ d.status }}">{{ d.status }}</span>{% if not forloop.last %} · {% endif %}
+    {% endfor %}
+  </p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>读盘操作</h2>
+  <p class="hint">
+    当前依赖走法：<strong>{{ policy.move }}</strong>
+    {% if policy.locked_date %}（{{ policy.locked_date }} 落定，当天锁定）{% endif %}
+  </p>
+
+  {% if job.status == "等待舱" %}
+    <p class="bad">任务已在等待舱：上游挂掉，普通开析入口已封。须人工确认并填写强析缘由后方可强行开析。</p>
+    <form method="post" action="/jobs/{{ job.id }}/force-parse/" class="force-form">
+      {% csrf_token %}
+      <label>强析缘由（必填，写入读盘详情）
+        <input type="text" name="reason" maxlength="255" placeholder="例：上游数据已人工补齐，可先行开析" required />
+      </label>
+      <button type="submit">人工确认 · 强行开析</button>
+    </form>
+  {% elif job.status == "依赖中断" %}
+    <p class="bad">任务已按依赖走法取消并标注「依赖中断」，开析入口关闭。</p>
+  {% elif entry_visible %}
+    <div class="actions">
+      <form method="post" action="/jobs/{{ job.id }}/parse/">{% csrf_token %}<button type="submit">执行解析（读盘开析）</button></form>
+      <form method="post" action="/jobs/{{ job.id }}/land/">{% csrf_token %}<button type="submit" class="secondary">执行入库</button></form>
+    </div>
+  {% else %}
+    <p class="wait">
+      上游未齐，下游读盘入口保持不可见。
+      {% if pending_upstreams %}读盘中上游：
+        {% for u in pending_upstreams %}<span class="mono">{{ u.code }}</span>{% if not forloop.last %}、{% endif %}{% endfor %}
+      {% endif %}
+      {% if dead_upstreams %}{% if pending_upstreams %}；{% endif %}已挂掉上游：
+        {% for u in dead_upstreams %}<span class="mono">{{ u.code }}</span>{% if not forloop.last %}、{% endif %}{% endfor %}
+        （点开析将按走法「{{ policy.move }}」处置）
+      {% endif %}
+    </p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>读盘详情流水</h2>
+  {% if events %}
+  <table class="grid">
+    <thead><tr><th>时间</th><th>类别</th><th>说明</th></tr></thead>
+    <tbody>
+    {% for e in events %}
+      <tr>
+        <td class="mono">{{ e.created_at|date:"Y-m-d H:i:s" }}</td>
+        <td><span class="chip chip-ev-{{ e.kind }}">{{ e.kind }}</span></td>
+        <td>{{ e.message }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="hint">暂无读盘事件。</p>
+  {% endif %}
+</section>
 {% endblock %}

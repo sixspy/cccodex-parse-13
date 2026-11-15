@@ -40,3 +40,35 @@ button.secondary { background: transparent; color: var(--accent); }
 .meta dt { font-size: .75rem; color: #7a7163; } .meta dd { margin: .15rem 0 0; }
 .actions { display: flex; gap: .8rem; margin-top: 1.5rem; }
 a { color: var(--accent); }
+.nav { margin-left: auto; margin-right: 1.4rem; font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: .92rem; display: flex; gap: 1rem; }
+.msgs { list-style: none; padding: 0; margin: 0 0 1.2rem; font-family: "IBM Plex Sans", sans-serif; }
+.msg { padding: .55rem .8rem; border: 1px solid var(--line); background: #fffdf8; margin-bottom: .45rem; font-size: .92rem; }
+.msg-error { border-color: #b04a4a; color: #9b2c2c; background: #fbf0ee; }
+.msg-success { border-color: #5b7a4a; color: #3f5e31; background: #f2f6ec; }
+.panel { background: #fffdf8; border: 1px solid var(--line); padding: 1.1rem 1.25rem; margin: 1.3rem 0; }
+.panel h2 { font-size: 1.1rem; margin: 0 0 .7rem; font-weight: 600; }
+.panel h3 { font-size: .98rem; margin: 1.1rem 0 .5rem; font-weight: 600; }
+.panel .grid { margin-bottom: .4rem; }
+.chip-等待舱 { background: #f3e8cf; border-color: #d3b176; }
+.chip-依赖中断 { background: #f5e1de; border-color: #c9847b; color: #8f2d22; }
+.chip-解析失败 { background: #f5e1de; border-color: #c9847b; color: #8f2d22; }
+.chip-已解析待入库, .chip-已入库 { background: #e7eedd; border-color: #93ad7d; color: #3f5e31; }
+.chip-ev-争用失败, .chip-ev-走法拦截, .chip-ev-中断 { background: #f5e1de; border-color: #c9847b; color: #8f2d22; }
+.chip-ev-强析, .chip-ev-进舱 { background: #f3e8cf; border-color: #d3b176; }
+.chip-ev-开析 { background: #e7eedd; border-color: #93ad7d; color: #3f5e31; }
+.ok { color: #3f5e31; font-family: "IBM Plex Sans", sans-serif; font-size: .9rem; }
+.bad { color: #8f2d22; font-family: "IBM Plex Sans", sans-serif; font-size: .9rem; }
+.wait { color: #8a6226; font-family: "IBM Plex Sans", sans-serif; font-size: .9rem; }
+.reason { color: #8a6226; }
+.stat-row { display: flex; gap: 1rem; margin: .8rem 0; }
+.stat { border: 1px solid var(--line); background: var(--chip); padding: .7rem 1.3rem; text-align: center; min-width: 7rem; }
+.stat-num { display: block; font-size: 1.6rem; font-family: "IBM Plex Mono", monospace; }
+.stat-label { display: block; font-size: .8rem; font-family: "IBM Plex Sans", sans-serif; color: #5c5346; margin-top: .2rem; }
+.pick { display: flex; flex-direction: column; gap: .45rem; margin: .5rem 0; }
+.pick-item { display: flex; align-items: center; gap: .5rem; margin: 0; padding: .4rem .6rem; border: 1px solid var(--line); background: #fff; font-family: "IBM Plex Sans", sans-serif; font-size: .9rem; }
+.pick-item input { width: auto; margin: 0; }
+.policy-form { margin-top: .6rem; }
+.policy-form button { margin-top: .8rem; }
+.policy-form button[disabled] { opacity: .5; cursor: not-allowed; }
+.force-form label { max-width: 560px; }
+.dep-form button { margin-top: .6rem; }
